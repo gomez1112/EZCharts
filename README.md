@@ -30,13 +30,13 @@ In Xcode:
 https://github.com/gomez1112/EZCharts.git
 ```
 
-4. Select version `0.1.0` or newer.
+4. To use the latest API shown in this README, select `Branch` and enter `main`.
 5. Add the `EZCharts` product to your app target.
 
 In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.0")
+.package(url: "https://github.com/gomez1112/EZCharts.git", branch: "main")
 ```
 
 Then add `EZCharts` to the target that uses it:
@@ -46,6 +46,12 @@ Then add `EZCharts` to the target that uses it:
     name: "YourApp",
     dependencies: ["EZCharts"]
 )
+```
+
+The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)` helper shown below was added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
+
+```swift
+.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.1")
 ```
 
 ## Importing
