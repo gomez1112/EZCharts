@@ -87,3 +87,13 @@ import Testing
     #expect(EZChartProgress.revealedRange(range, progress: 2).upperBound == 0.7)
     #expect(abs(EZChartProgress.revealedRange(range, progress: 0.5).upperBound - 0.45) < 0.0001)
 }
+
+@Test func animationProgressClampsAndEases() {
+    let linear = EZChartAnimation(duration: 1, curve: .linear)
+    let easeOut = EZChartAnimation(duration: 1, curve: .easeOut)
+
+    #expect(linear.progress(at: -1) == 0)
+    #expect(linear.progress(at: 0.25) == 0.25)
+    #expect(linear.progress(at: 2) == 1)
+    #expect(easeOut.progress(at: 0.5) > 0.5)
+}

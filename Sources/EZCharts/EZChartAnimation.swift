@@ -45,6 +45,31 @@ public struct EZChartAnimation: Equatable {
             )
         }
     }
+
+    func progress(at rawProgress: Double) -> Double {
+        let progress = EZChartProgress.clamped(rawProgress)
+
+        switch curve {
+        case .linear:
+            return progress
+        case .easeInOut:
+            return smoothstep(progress)
+        case .easeOut:
+            return cubicEaseOut(progress)
+        case .spring:
+            return cubicEaseOut(progress)
+        }
+    }
+
+    private func smoothstep(_ progress: Double) -> Double {
+        progress * progress * (3 - 2 * progress)
+    }
+
+    private func cubicEaseOut(_ progress: Double) -> Double {
+        let remaining = 1 - progress
+
+        return 1 - (remaining * remaining * remaining)
+    }
 }
 
 @available(iOS 16.0, macOS 13.0, *)

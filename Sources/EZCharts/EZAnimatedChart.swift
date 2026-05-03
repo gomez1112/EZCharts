@@ -21,7 +21,7 @@ public struct EZAnimatedChart<Content: ChartContent>: View {
     }
 
     public var body: some View {
-        EZChartAnimator(animation: animation, replayToken: replayToken) { progress in
+        EZChartProgressDriver(animation: animation, replayToken: replayToken) { progress in
             Chart {
                 content(progress)
             }

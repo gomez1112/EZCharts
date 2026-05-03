@@ -15,58 +15,49 @@ struct Chart3DAnimationDemoView: View {
             VStack(alignment: .leading, spacing: 20) {
                 ChartPanel(
                     title: "Sequenced 3D Points",
-                    subtitle: "The same progress helpers drive Chart3D marks.",
+                    subtitle: "A dedicated 3D wrapper drives the marks frame by frame.",
                     action: {
                         replayButton
                     }
                 ) {
-                    EZChartAnimator(
-                        animation: EZChartAnimation(duration: 1.6, curve: .easeOut),
+                    EZAnimatedChart3D(
+                        animation: EZChartAnimation(duration: 2.2, curve: .easeOut),
                         replayToken: replayToken
                     ) { progress in
-                        Chart3D {
-                            ForEach(Array(ChartSamples.spatial.enumerated()), id: \.element.id) { index, sample in
-                                let pointProgress = EZChartProgress.sequenced(
-                                    index: index,
-                                    count: ChartSamples.spatial.count,
-                                    progress: progress,
-                                    overlap: 0.08
-                                )
-                                animatedPointMark(for: sample, progress: pointProgress)
-                            }
+                        ForEach(Array(ChartSamples.spatial.enumerated()), id: \.element.id) { index, sample in
+                            let pointProgress = EZChart3DProgress.sequenced(
+                                index: index,
+                                count: ChartSamples.spatial.count,
+                                progress: progress,
+                                overlap: 0.05
+                            )
+                            animatedPointMark(for: sample, progress: pointProgress)
                         }
-                        .chart3DPose($pose)
-                        .chartXAxisLabel("Acquisition")
-                        .chartYAxisLabel("Revenue")
-                        .chartZAxisLabel("Retention")
-                        .chartXScale(domain: 0...100, range: -0.5...0.5)
-                        .chartYScale(domain: 0...100, range: -0.5...0.5)
-                        .chartZScale(domain: 0...100, range: -0.5...0.5)
                     }
+                    .chart3DPose($pose)
+                    .chartXAxisLabel("Acquisition")
+                    .chartYAxisLabel("Revenue")
+                    .chartZAxisLabel("Retention")
+                    .chartXScale(domain: 0...100, range: -0.5...0.5)
+                    .chartYScale(domain: 0...100, range: -0.5...0.5)
+                    .chartZScale(domain: 0...100, range: -0.5...0.5)
                     .frame(height: 320)
                 }
 
                 CodeSampleView(
                     lines: [
-                        "EZChartAnimator { progress in",
-                        "  Chart3D {",
-                        "    ForEach(Array(",
-                        "      data.enumerated()",
-                        "    ),",
-                        "            id: \\.element.id) { index, point in",
-                        "      let pointProgress =",
-                        "        EZChartProgress.sequenced(...)",
-                        "      PointMark(",
-                        "        x: .value(\"X\", point.x),",
-                        "        y: .value(\"Y\",",
-                        "          EZChartProgress.scaled(",
-                        "            point.y,",
-                        "            progress: pointProgress",
-                        "          )",
-                        "        ),",
-                        "        z: .value(\"Z\", point.z)",
-                        "      )",
-                        "    }",
+                        "EZAnimatedChart3D { progress in",
+                        "  ForEach(data) { point in",
+                        "    PointMark(",
+                        "      x: .value(\"X\", point.x),",
+                        "      y: .value(\"Y\",",
+                        "        EZChart3DProgress.scaled(",
+                        "          point.y,",
+                        "          progress: progress",
+                        "        )",
+                        "      ),",
+                        "      z: .value(\"Z\", point.z)",
+                        "    )",
                         "  }",
                         "}"
                     ]
@@ -92,17 +83,19 @@ struct Chart3DAnimationDemoView: View {
         for sample: SpatialSample,
         progress: Double
     ) -> some Chart3DContent {
-        let animatedRevenue = EZChartProgress.scaled(
+        let animatedRevenue = EZChart3DProgress.scaled(
             sample.revenue,
             progress: progress
         )
+        let symbolSize = CGFloat(0.01 + (0.065 * progress))
 
         PointMark(
             x: .value("Acquisition", sample.acquisition),
             y: .value("Revenue", animatedRevenue),
             z: .value("Retention", sample.retention)
         )
-        .foregroundStyle(sample.tint)
+        .symbolSize(symbolSize)
+        .foregroundStyle(sample.tint.opacity(progress))
     }
 }
 
