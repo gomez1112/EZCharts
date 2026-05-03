@@ -3,6 +3,7 @@ import SwiftUI
 enum AppTab: String, CaseIterable, Identifiable {
     case bars
     case line
+    case sectors
 
     var id: String { rawValue }
 
@@ -12,6 +13,8 @@ enum AppTab: String, CaseIterable, Identifiable {
             return "Bars"
         case .line:
             return "Line"
+        case .sectors:
+            return "Sectors"
         }
     }
 
@@ -21,6 +24,8 @@ enum AppTab: String, CaseIterable, Identifiable {
             return "chart.bar.fill"
         case .line:
             return "chart.xyaxis.line"
+        case .sectors:
+            return "chart.pie.fill"
         }
     }
 }
@@ -45,6 +50,14 @@ struct ContentView: View {
                 Label(AppTab.line.title, systemImage: AppTab.line.systemImage)
             }
             .tag(AppTab.line)
+
+            NavigationStack {
+                SectorAnimationDemoView()
+            }
+            .tabItem {
+                Label(AppTab.sectors.title, systemImage: AppTab.sectors.systemImage)
+            }
+            .tag(AppTab.sectors)
         }
     }
 }
