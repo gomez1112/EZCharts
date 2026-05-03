@@ -13,6 +13,13 @@ struct GrowthPoint: Identifiable {
     let value: Double
 }
 
+struct ChannelSample: Identifiable {
+    let id = UUID()
+    let name: String
+    let value: Double
+    let tint: Color
+}
+
 enum ChartSamples {
     static let revenue: [RevenueSample] = [
         RevenueSample(month: "Jan", value: 34, tint: .teal),
@@ -32,5 +39,12 @@ enum ChartSamples {
         GrowthPoint(week: "W6", value: 53),
         GrowthPoint(week: "W7", value: 68),
         GrowthPoint(week: "W8", value: 74)
+    ]
+
+    static let channels: [ChannelSample] = [
+        ChannelSample(name: "Direct", value: 42, tint: .teal),
+        ChannelSample(name: "Search", value: 28, tint: .blue),
+        ChannelSample(name: "Social", value: 18, tint: .pink),
+        ChannelSample(name: "Email", value: 12, tint: .orange)
     ]
 }

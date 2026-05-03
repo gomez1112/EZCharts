@@ -4,7 +4,8 @@
 
 - `EZAnimatedChart`, a wrapper around `Chart` that drives an animation progress value from `0` to `1`.
 - `EZChartProgress.scaled`, for marks that should grow from zero to their final value.
-- `EZChartProgress.staggered`, for bar charts where each mark should animate in sequence.
+- `EZChartProgress.staggered`, for overlapping cascade animations.
+- `EZChartProgress.sequenced`, for one-by-one bar and sector animations.
 - `EZChartReveal.horizontal`, for line and area charts that should draw across the plot from left to right.
 - `EZChartDomain.zeroBased` and `.ezChartYScale(for:)`, for keeping the chart axis stable while values animate.
 
@@ -48,7 +49,7 @@ Then add `EZCharts` to the target that uses it:
 )
 ```
 
-The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)` helper shown below was added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
+The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)` and `.sequenced(...)` helpers shown below were added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
 
 ```swift
 .package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.1")
@@ -152,7 +153,7 @@ For that sample, `.ezChartYScale(for:)` calculates a domain of `0...55_000`, whi
 
 ## Staggered Bar Animation
 
-For a nicer entrance, animate each bar with its own timing window:
+Use `staggered` when you want a cascade where multiple bars can animate at the same time:
 
 ```swift
 struct StaggeredSalesChart: View {
@@ -182,7 +183,119 @@ struct StaggeredSalesChart: View {
 }
 ```
 
-`itemDuration` controls how much of the total animation each item receives. Smaller values create a more separated cascade.
+`itemDuration` controls how much of the total animation each item receives. Smaller values make each bar animate faster. In other words, `itemDuration: 0.01` means each bar gets about 1% of the total progress, so it will pop in almost instantly.
+
+## One-by-One Bar Animation
+
+Use `sequenced` when you want each bar to finish mostly before the next one starts:
+
+```swift
+struct SequencedSalesChart: View {
+    var body: some View {
+        EZAnimatedChart(
+            animation: EZChartAnimation(duration: 1.5, curve: .easeOut)
+        ) { progress in
+            ForEach(Array(sales.enumerated()), id: \.element.id) { index, point in
+                let barProgress = EZChartProgress.sequenced(
+                    index: index,
+                    count: sales.count,
+                    progress: progress,
+                    overlap: 0.08
+                )
+
+                BarMark(
+                    x: .value("Month", point.month),
+                    y: .value(
+                        "Sales",
+                        EZChartProgress.scaled(point.value, progress: barProgress)
+                    )
+                )
+            }
+        }
+        .ezChartYScale(for: sales.map(\.value))
+        .frame(height: 280)
+    }
+}
+```
+
+For your sample with three bars, this is the version to use:
+
+```swift
+EZAnimatedChart(
+    animation: EZChartAnimation(duration: 1.5, curve: .easeOut)
+) { progress in
+    ForEach(Array(Company.sampleData.enumerated()), id: \.element.id) { index, point in
+        let barProgress = EZChartProgress.sequenced(
+            index: index,
+            count: Company.sampleData.count,
+            progress: progress
+        )
+
+        BarMark(
+            x: .value("Month", point.month),
+            y: .value(
+                "Sales",
+                EZChartProgress.scaled(point.revenue, progress: barProgress)
+            )
+        )
+        .foregroundStyle(point.color)
+    }
+}
+.ezChartYScale(for: Company.sampleData.map(\.revenue))
+.frame(height: 280)
+```
+
+Increase the `EZChartAnimation` duration when you want the whole sequence to feel slower. Use `overlap` when you want the next item to start slightly before the current item finishes.
+
+## Sector Mark Animation
+
+`SectorMark` is available on iOS 17 and newer. Keep the angle value at its final value so the sector proportions stay stable, then animate the sector radius and opacity with `sequenced`:
+
+```swift
+struct ChannelPoint: Identifiable {
+    let id = UUID()
+    let name: String
+    let value: Double
+    let color: Color
+}
+
+let channels = [
+    ChannelPoint(name: "Direct", value: 42, color: .teal),
+    ChannelPoint(name: "Search", value: 28, color: .blue),
+    ChannelPoint(name: "Social", value: 18, color: .pink),
+    ChannelPoint(name: "Email", value: 12, color: .orange)
+]
+
+struct ChannelChart: View {
+    var body: some View {
+        EZAnimatedChart(
+            animation: EZChartAnimation(duration: 1.7, curve: .easeOut)
+        ) { progress in
+            ForEach(Array(channels.enumerated()), id: \.element.id) { index, point in
+                let sectorProgress = EZChartProgress.sequenced(
+                    index: index,
+                    count: channels.count,
+                    progress: progress,
+                    overlap: 0.08
+                )
+
+                SectorMark(
+                    angle: .value("Share", point.value),
+                    innerRadius: .ratio(0.52),
+                    outerRadius: .ratio(0.52 + (0.48 * sectorProgress)),
+                    angularInset: 2
+                )
+                .foregroundStyle(point.color)
+                .opacity(sectorProgress)
+            }
+        }
+        .chartLegend(.hidden)
+        .frame(height: 280)
+    }
+}
+```
+
+Do not animate the `angle` value one sector at a time unless you want the pie proportions to rebalance while the animation runs. Keeping `angle` fixed and animating radius gives each sector a clean entrance while preserving the final chart shape.
 
 ## Line Reveal Animation
 
@@ -357,7 +470,20 @@ EZChartProgress.staggered(
 )
 ```
 
-Returns an eased progress value for one item in a sequence.
+Returns an eased progress value for one item in an overlapping cascade. `itemDuration` is the fraction of total progress used by each item, so smaller values animate each item faster.
+
+### `EZChartProgress.sequenced`
+
+```swift
+EZChartProgress.sequenced(
+    index: index,
+    count: items.count,
+    progress: progress,
+    overlap: 0.08
+)
+```
+
+Returns an eased progress value for one item in a one-by-one sequence. With the default `overlap: 0`, each item waits for the previous item to finish. Increase `overlap` when you want a softer handoff.
 
 ### `EZChartReveal.horizontal`
 
@@ -392,8 +518,9 @@ Convenience modifier for applying `EZChartDomain.zeroBased` directly to an anima
 
 The demo app lives in `Examples/EZChartsDemo`. It shows:
 
-- A staggered bar growth chart.
+- A sequenced bar growth chart.
 - A horizontal line reveal chart.
+- A sequenced sector chart.
 - Replay buttons.
 - Copyable usage recipes inside the app UI.
 
@@ -421,5 +548,7 @@ SCREENSHOT_DELAY=6 ./scripts/build_and_launch.sh
 
 - Set a stable Y scale when animating bars so the axis does not rescale during the animation. Prefer `.ezChartYScale(for: data.map(\.value))`, or use Swift Charts' `.chartYScale(domain:)` directly when you already know the exact domain.
 - Use `scaled` for bars and other marks that should grow from zero.
+- Use `sequenced` for one-by-one bars or sectors.
+- Use a longer `EZChartAnimation(duration:)` when the entire sequence feels too fast.
 - Use `reveal: .horizontal` for line and area charts where the full shape should draw across the plot.
 - Keep using normal Swift Charts modifiers for styling, axes, legends, foreground styles, interpolation, and layout.
