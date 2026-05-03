@@ -25,10 +25,10 @@ After this repository is hosted on GitHub, add it to an app in Xcode with:
 https://github.com/gomez1112/EZCharts.git
 ```
 
-Or add it to a `Package.swift` manifest:
+Or add it to a `Package.swift` manifest while the package is evolving:
 
 ```swift
-.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.0")
+.package(url: "https://github.com/gomez1112/EZCharts.git", branch: "main")
 ```
 
 Build and launch with:
