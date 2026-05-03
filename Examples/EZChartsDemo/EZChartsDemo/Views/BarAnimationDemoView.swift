@@ -9,14 +9,14 @@ struct BarAnimationDemoView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 ChartPanel(
-                    title: "Staggered Bar Growth",
-                    subtitle: "Each bar receives its own progress window.",
+                    title: "Sequenced Bar Growth",
+                    subtitle: "Each bar expands before the next begins.",
                     action: {
                         replayButton
                     }
                 ) {
                     EZAnimatedChart(
-                        animation: .snappy,
+                        animation: EZChartAnimation(duration: 1.5, curve: .easeOut),
                         replayToken: replayToken
                     ) { progress in
                         ForEach(Array(ChartSamples.revenue.enumerated()), id: \.element.id) { index, sample in
@@ -26,11 +26,11 @@ struct BarAnimationDemoView: View {
                                     "Revenue",
                                     EZChartProgress.scaled(
                                         sample.value,
-                                        progress: EZChartProgress.staggered(
+                                        progress: EZChartProgress.sequenced(
                                             index: index,
                                             count: ChartSamples.revenue.count,
                                             progress: progress,
-                                            itemDuration: 0.45
+                                            overlap: 0.08
                                         )
                                     )
                                 )
@@ -49,11 +49,12 @@ struct BarAnimationDemoView: View {
                         "EZAnimatedChart { progress in",
                         "  ForEach(data) { point in",
                         "    BarMark(",
-                        "      x: .value(\"Month\", point.month),",
+                        "      x: .value(\"Month\", point.month)",
                         "      y: .value(\"Revenue\",",
                         "        EZChartProgress.scaled(",
                         "          point.value,",
-                        "          progress: progress",
+                        "          progress: EZChartProgress",
+                        "            .sequenced(...)",
                         "        )",
                         "      )",
                         "    )",
