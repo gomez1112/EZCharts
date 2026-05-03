@@ -40,18 +40,28 @@ struct BarAnimationDemoView: View {
                         }
                     }
                     .chartYAxisLabel("Revenue")
-                    .chartYScale(domain: 0...100)
+                    .ezChartYScale(for: ChartSamples.revenue.map(\.value))
                     .frame(height: 280)
                 }
 
                 CodeSampleView(
                     lines: [
                         "EZAnimatedChart { progress in",
-                        "  BarMark(",
-                        "    x: .value(\"Month\", month),",
-                        "    y: .value(\"Revenue\", value * progress)",
-                        "  )",
-                        "}"
+                        "  ForEach(data) { point in",
+                        "    BarMark(",
+                        "      x: .value(\"Month\", point.month),",
+                        "      y: .value(\"Revenue\",",
+                        "        EZChartProgress.scaled(",
+                        "          point.value,",
+                        "          progress: progress",
+                        "        )",
+                        "      )",
+                        "    )",
+                        "  }",
+                        "}",
+                        ".ezChartYScale(",
+                        "  for: data.map(\\.value)",
+                        ")"
                     ]
                 )
             }

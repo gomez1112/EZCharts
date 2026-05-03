@@ -21,4 +21,23 @@ final class EZChartProgressTests: XCTestCase {
         XCTAssertGreaterThan(first, last)
         XCTAssertEqual(EZChartProgress.staggered(index: 3, count: 4, progress: 1), 1)
     }
+
+    func testZeroBasedDomainAddsHeadroomForPositiveValues() {
+        let domain = EZChartDomain.zeroBased([20_000, 10_000, 50_000])
+
+        XCTAssertEqual(domain.lowerBound, 0)
+        XCTAssertEqual(domain.upperBound, 55_000)
+    }
+
+    func testZeroBasedDomainUsesFallbackForEmptyOrZeroValues() {
+        XCTAssertEqual(EZChartDomain.zeroBased([Double]()), 0...1)
+        XCTAssertEqual(EZChartDomain.zeroBased([0, 0, 0]), 0...1)
+    }
+
+    func testZeroBasedDomainIncludesNegativeValues() {
+        let domain = EZChartDomain.zeroBased([-10.0, 20.0], headroom: 0.2)
+
+        XCTAssertEqual(domain.lowerBound, -12)
+        XCTAssertEqual(domain.upperBound, 24)
+    }
 }

@@ -6,6 +6,7 @@
 - `EZChartProgress.scaled`, for marks that should grow from zero to their final value.
 - `EZChartProgress.staggered`, for bar charts where each mark should animate in sequence.
 - `EZChartReveal.horizontal`, for line and area charts that should draw across the plot from left to right.
+- `EZChartDomain.zeroBased` and `.ezChartYScale(for:)`, for keeping the chart axis stable while values animate.
 
 The package is intentionally light. You still write normal Swift Charts marks, scales, styles, and axes. `EZCharts` only provides the reusable animation timing.
 
@@ -29,13 +30,13 @@ In Xcode:
 https://github.com/gomez1112/EZCharts.git
 ```
 
-4. Select version `0.1.0` or newer.
+4. To use the latest API shown in this README, select `Branch` and enter `main`.
 5. Add the `EZCharts` product to your app target.
 
 In `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.0")
+.package(url: "https://github.com/gomez1112/EZCharts.git", branch: "main")
 ```
 
 Then add `EZCharts` to the target that uses it:
@@ -45,6 +46,12 @@ Then add `EZCharts` to the target that uses it:
     name: "YourApp",
     dependencies: ["EZCharts"]
 )
+```
+
+The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)` helper shown below was added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
+
+```swift
+.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.1")
 ```
 
 ## Importing
@@ -87,13 +94,61 @@ struct SalesChart: View {
                 )
             }
         }
-        .chartYScale(domain: 0...100)
+        .ezChartYScale(for: sales.map(\.value))
         .frame(height: 280)
     }
 }
 ```
 
 `EZChartProgress.scaled(point.value, progress: progress)` is the key line. When `progress` is `0`, the bar is `0`. When `progress` is `1`, the bar is the real value.
+
+`.ezChartYScale(for: sales.map(\.value))` is also important. Swift Charts normally auto-scales the Y axis from the data currently inside the chart. During an animation, your data changes every frame because the values move from `0` to their final value. A stable Y scale keeps the baseline pinned at zero, so bars grow upward instead of looking like they are moving from the top down.
+
+With your `Company` example, write it like this:
+
+```swift
+import Charts
+import EZCharts
+import SwiftUI
+
+struct ContentView: View {
+    var body: some View {
+        EZAnimatedChart { progress in
+            ForEach(Company.sampleData) { point in
+                BarMark(
+                    x: .value("Month", point.month),
+                    y: .value(
+                        "Revenue",
+                        EZChartProgress.scaled(point.revenue, progress: progress)
+                    )
+                )
+                .foregroundStyle(point.color)
+            }
+        }
+        .ezChartYScale(for: Company.sampleData.map(\.revenue))
+        .frame(height: 280)
+    }
+}
+
+struct Company: Identifiable {
+    let id = UUID()
+    let revenue: Double
+    let month: String
+    let color: Color
+
+    static let sampleData = [
+        Company(revenue: 20_000, month: "Jan", color: .red),
+        Company(revenue: 10_000, month: "Feb", color: .green),
+        Company(revenue: 50_000, month: "Mar", color: .blue)
+    ]
+}
+```
+
+For that sample, `.ezChartYScale(for:)` calculates a domain of `0...55_000`, which gives the tallest bar 10% headroom. If you want more or less space at the top, pass `headroom`:
+
+```swift
+.ezChartYScale(for: Company.sampleData.map(\.revenue), headroom: 0.2)
+```
 
 ## Staggered Bar Animation
 
@@ -121,7 +176,7 @@ struct StaggeredSalesChart: View {
                 .foregroundStyle(.blue)
             }
         }
-        .chartYScale(domain: 0...100)
+        .ezChartYScale(for: sales.map(\.value))
         .frame(height: 280)
     }
 }
@@ -213,7 +268,7 @@ struct ReplayableChart: View {
                     )
                 }
             }
-            .chartYScale(domain: 0...100)
+            .ezChartYScale(for: sales.map(\.value))
             .frame(height: 280)
 
             Button {
@@ -314,6 +369,25 @@ EZAnimatedChart(reveal: .horizontal) { _ in
 
 Masks the chart plot area from leading edge to trailing edge.
 
+### `EZChartDomain.zeroBased`
+
+```swift
+EZChartDomain.zeroBased([20_000, 10_000, 50_000])
+```
+
+Returns a stable `ClosedRange<Double>` you can pass to Swift Charts. The lower bound includes zero, and positive values receive 10% headroom by default. The example above returns `0...55_000`.
+
+### `.ezChartYScale(for:)`
+
+```swift
+EZAnimatedChart { progress in
+    // Animated bar marks
+}
+.ezChartYScale(for: data.map(\.value))
+```
+
+Convenience modifier for applying `EZChartDomain.zeroBased` directly to an animated chart. Use this for bar charts that animate their Y values with `EZChartProgress.scaled`.
+
 ## Demo App
 
 The demo app lives in `Examples/EZChartsDemo`. It shows:
@@ -345,7 +419,7 @@ SCREENSHOT_DELAY=6 ./scripts/build_and_launch.sh
 
 ## Tips
 
-- Set a stable `.chartYScale(domain:)` when animating bars so the axis does not rescale during the animation.
+- Set a stable Y scale when animating bars so the axis does not rescale during the animation. Prefer `.ezChartYScale(for: data.map(\.value))`, or use Swift Charts' `.chartYScale(domain:)` directly when you already know the exact domain.
 - Use `scaled` for bars and other marks that should grow from zero.
 - Use `reveal: .horizontal` for line and area charts where the full shape should draw across the plot.
 - Keep using normal Swift Charts modifiers for styling, axes, legends, foreground styles, interpolation, and layout.
