@@ -3,9 +3,11 @@
 `EZCharts` is a small Swift package that makes Swift Charts animations easier to reuse. It gives you:
 
 - `EZAnimatedChart`, a wrapper around `Chart` that drives an animation progress value from `0` to `1`.
+- `EZChartAnimator`, a generic progress driver for `Chart`, `Chart3D`, or your own chart view.
 - `EZChartProgress.scaled`, for marks that should grow from zero to their final value.
 - `EZChartProgress.staggered`, for overlapping cascade animations.
-- `EZChartProgress.sequenced`, for one-by-one bar and sector animations.
+- `EZChartProgress.sequenced`, for one-by-one mark animations.
+- `EZChartProgress.sectorRanges` and `revealedRange`, for sector slices that sweep in individually.
 - `EZChartReveal.horizontal`, for line and area charts that should draw across the plot from left to right.
 - `EZChartDomain.zeroBased` and `.ezChartYScale(for:)`, for keeping the chart axis stable while values animate.
 
@@ -49,7 +51,7 @@ Then add `EZCharts` to the target that uses it:
 )
 ```
 
-The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)` and `.sequenced(...)` helpers shown below were added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
+The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)`, `.sequenced(...)`, sector range helpers, and `EZChartAnimator` shown below were added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
 
 ```swift
 .package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.1")
@@ -249,7 +251,7 @@ Increase the `EZChartAnimation` duration when you want the whole sequence to fee
 
 ## Sector Mark Animation
 
-`SectorMark` is available on iOS 17 and newer. Keep the angle value at its final value so the sector proportions stay stable, then animate the sector radius and opacity with `sequenced`:
+`SectorMark` is available on iOS 17 and newer. For a true slice-by-slice sweep, do not animate opacity by itself and do not pass only scaled values as plain sector values. Instead, give each sector an explicit final angle range, then reveal only part of that range with `revealedRange`.
 
 ```swift
 struct ChannelPoint: Identifiable {
@@ -268,6 +270,10 @@ let channels = [
 
 struct ChannelChart: View {
     var body: some View {
+        let ranges = EZChartProgress.sectorRanges(
+            for: channels.map(\.value)
+        )
+
         EZAnimatedChart(
             animation: EZChartAnimation(duration: 1.7, curve: .easeOut)
         ) { progress in
@@ -278,15 +284,18 @@ struct ChannelChart: View {
                     progress: progress,
                     overlap: 0.08
                 )
+                let revealedRange = EZChartProgress.revealedRange(
+                    ranges[index],
+                    progress: sectorProgress
+                )
 
                 SectorMark(
-                    angle: .value("Share", point.value),
+                    angle: .value("Share", revealedRange),
                     innerRadius: .ratio(0.52),
-                    outerRadius: .ratio(0.52 + (0.48 * sectorProgress)),
+                    outerRadius: .ratio(1),
                     angularInset: 2
                 )
                 .foregroundStyle(point.color)
-                .opacity(sectorProgress)
             }
         }
         .chartLegend(.hidden)
@@ -295,7 +304,82 @@ struct ChannelChart: View {
 }
 ```
 
-Do not animate the `angle` value one sector at a time unless you want the pie proportions to rebalance while the animation runs. Keeping `angle` fixed and animating radius gives each sector a clean entrance while preserving the final chart shape.
+`sectorRanges(for:)` returns normalized ranges such as `0.0..<0.42`, `0.42..<0.70`, and so on. `revealedRange(_:progress:)` keeps the range's start fixed and moves only its end. That is what makes an individual slice sweep into place instead of fading the whole mark.
+
+Avoid this version for one-by-one sector animation:
+
+```swift
+SectorMark(
+    angle: .value("Share", point.value * sectorProgress)
+)
+```
+
+Plain sector values are proportional to the current total in the chart. When some sectors are still at zero, the visible sectors can rebalance while the animation runs. Explicit ranges avoid that.
+
+## Chart3D Animation
+
+`Chart3D` is available in Swift Charts on iOS 26, macOS 26, and visionOS 26. Use `EZChartAnimator` when you want the same animation progress value but you need to build the chart view yourself instead of using `EZAnimatedChart`.
+
+```swift
+struct PipelinePoint: Identifiable {
+    let id = UUID()
+    let acquisition: Double
+    let revenue: Double
+    let retention: Double
+}
+
+let pipeline = [
+    PipelinePoint(acquisition: 18, revenue: 24, retention: 32),
+    PipelinePoint(acquisition: 36, revenue: 48, retention: 50),
+    PipelinePoint(acquisition: 58, revenue: 68, retention: 64),
+    PipelinePoint(acquisition: 82, revenue: 88, retention: 78)
+]
+
+@available(iOS 26.0, *)
+struct Pipeline3DChart: View {
+    @State private var pose = Chart3DPose(
+        azimuth: .degrees(35),
+        inclination: .degrees(18)
+    )
+
+    var body: some View {
+        EZChartAnimator(
+            animation: EZChartAnimation(duration: 1.6, curve: .easeOut)
+        ) { progress in
+            Chart3D {
+                ForEach(Array(pipeline.enumerated()), id: \.element.id) { index, point in
+                    let pointProgress = EZChartProgress.sequenced(
+                        index: index,
+                        count: pipeline.count,
+                        progress: progress,
+                        overlap: 0.08
+                    )
+                    let animatedRevenue = EZChartProgress.scaled(
+                        point.revenue,
+                        progress: pointProgress
+                    )
+
+                    PointMark(
+                        x: .value("Acquisition", point.acquisition),
+                        y: .value("Revenue", animatedRevenue),
+                        z: .value("Retention", point.retention)
+                    )
+                }
+            }
+            .chart3DPose($pose)
+            .chartXAxisLabel("Acquisition")
+            .chartYAxisLabel("Revenue")
+            .chartZAxisLabel("Retention")
+            .chartXScale(domain: 0...100, range: -0.5...0.5)
+            .chartYScale(domain: 0...100, range: -0.5...0.5)
+            .chartZScale(domain: 0...100, range: -0.5...0.5)
+        }
+        .frame(height: 320)
+    }
+}
+```
+
+The progress helpers are not tied to two-dimensional charts. Use `scaled`, `staggered`, and `sequenced` anywhere you can feed an animated number into a Swift Charts mark, including the `x`, `y`, or `z` values in `Chart3D`.
 
 ## Line Reveal Animation
 
@@ -437,6 +521,19 @@ Supported curves:
 
 ## API Reference
 
+### `EZChartAnimator`
+
+```swift
+EZChartAnimator(
+    animation: EZChartAnimation = .smooth,
+    replayToken: AnyHashable? = nil
+) { progress in
+    // Any SwiftUI view, including Chart or Chart3D
+}
+```
+
+Use this when you need the animation progress driver but `EZAnimatedChart` is too specific. This is the preferred wrapper for `Chart3D`.
+
 ### `EZAnimatedChart`
 
 ```swift
@@ -485,6 +582,27 @@ EZChartProgress.sequenced(
 
 Returns an eased progress value for one item in a one-by-one sequence. With the default `overlap: 0`, each item waits for the previous item to finish. Increase `overlap` when you want a softer handoff.
 
+### `EZChartProgress.sectorRanges`
+
+```swift
+let ranges = EZChartProgress.sectorRanges(
+    for: data.map(\.value)
+)
+```
+
+Returns normalized angle ranges for a pie or donut chart. Use these ranges with `SectorMark` when each sector should keep its final position while it animates.
+
+### `EZChartProgress.revealedRange`
+
+```swift
+EZChartProgress.revealedRange(
+    ranges[index],
+    progress: sectorProgress
+)
+```
+
+Returns a partial range that starts at the original lower bound and moves toward the original upper bound as progress moves from `0` to `1`.
+
 ### `EZChartReveal.horizontal`
 
 ```swift
@@ -520,7 +638,8 @@ The demo app lives in `Examples/EZChartsDemo`. It shows:
 
 - A sequenced bar growth chart.
 - A horizontal line reveal chart.
-- A sequenced sector chart.
+- A sequenced sector chart with true per-slice sweep animation.
+- A Chart3D point chart driven by `EZChartAnimator`.
 - Replay buttons.
 - Copyable usage recipes inside the app UI.
 
@@ -548,7 +667,9 @@ SCREENSHOT_DELAY=6 ./scripts/build_and_launch.sh
 
 - Set a stable Y scale when animating bars so the axis does not rescale during the animation. Prefer `.ezChartYScale(for: data.map(\.value))`, or use Swift Charts' `.chartYScale(domain:)` directly when you already know the exact domain.
 - Use `scaled` for bars and other marks that should grow from zero.
-- Use `sequenced` for one-by-one bars or sectors.
+- Use `sequenced` for one-by-one bars, sectors, or 3D marks.
+- Use explicit sector ranges for `SectorMark` when you want each slice to sweep in individually.
+- Use `EZChartAnimator` for `Chart3D`; use `EZAnimatedChart` for normal `Chart` plus built-in 2D reveal effects.
 - Use a longer `EZChartAnimation(duration:)` when the entire sequence feels too fast.
 - Use `reveal: .horizontal` for line and area charts where the full shape should draw across the plot.
 - Keep using normal Swift Charts modifiers for styling, axes, legends, foreground styles, interpolation, and layout.

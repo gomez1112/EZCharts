@@ -46,6 +46,50 @@ public enum EZChartProgress {
         return eased(clamped(localProgress))
     }
 
+    public static func sectorRanges<Values: Sequence>(
+        for values: Values
+    ) -> [Range<Double>] where Values.Element: BinaryFloatingPoint {
+        makeSectorRanges(values.map(Double.init))
+    }
+
+    public static func sectorRanges<Values: Sequence>(
+        for values: Values
+    ) -> [Range<Double>] where Values.Element: BinaryInteger {
+        makeSectorRanges(values.map(Double.init))
+    }
+
+    public static func revealedRange(
+        _ range: Range<Double>,
+        progress: Double
+    ) -> Range<Double> {
+        let span = max(range.upperBound - range.lowerBound, 0)
+        let upperBound = range.lowerBound + (span * clamped(progress))
+
+        return range.lowerBound..<upperBound
+    }
+
+    private static func makeSectorRanges<Values: Sequence>(
+        _ values: Values
+    ) -> [Range<Double>] where Values.Element == Double {
+        let normalizedValues = values.map { value in
+            value.isFinite && value > 0 ? value : 0
+        }
+        let total = normalizedValues.reduce(0, +)
+
+        guard total > 0 else {
+            return normalizedValues.map { _ in 0..<0 }
+        }
+
+        var start = 0.0
+
+        return normalizedValues.map { value in
+            let end = start + (value / total)
+            defer { start = end }
+
+            return start..<end
+        }
+    }
+
     private static func eased(_ progress: Double) -> Double {
         progress * progress * (3 - 2 * progress)
     }

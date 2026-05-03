@@ -4,6 +4,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case bars
     case line
     case sectors
+    case spatial
 
     var id: String { rawValue }
 
@@ -15,6 +16,8 @@ enum AppTab: String, CaseIterable, Identifiable {
             return "Line"
         case .sectors:
             return "Sectors"
+        case .spatial:
+            return "3D"
         }
     }
 
@@ -26,6 +29,8 @@ enum AppTab: String, CaseIterable, Identifiable {
             return "chart.xyaxis.line"
         case .sectors:
             return "chart.pie.fill"
+        case .spatial:
+            return "cube.fill"
         }
     }
 }
@@ -58,6 +63,18 @@ struct ContentView: View {
                 Label(AppTab.sectors.title, systemImage: AppTab.sectors.systemImage)
             }
             .tag(AppTab.sectors)
+
+            NavigationStack {
+                if #available(iOS 26.0, *) {
+                    Chart3DAnimationDemoView()
+                } else {
+                    Chart3DUnavailableView()
+                }
+            }
+            .tabItem {
+                Label(AppTab.spatial.title, systemImage: AppTab.spatial.systemImage)
+            }
+            .tag(AppTab.spatial)
         }
     }
 }

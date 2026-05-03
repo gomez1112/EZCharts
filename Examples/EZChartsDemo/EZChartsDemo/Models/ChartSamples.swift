@@ -20,6 +20,15 @@ struct ChannelSample: Identifiable {
     let tint: Color
 }
 
+struct SpatialSample: Identifiable {
+    let id = UUID()
+    let segment: String
+    let acquisition: Double
+    let revenue: Double
+    let retention: Double
+    let tint: Color
+}
+
 enum ChartSamples {
     static let revenue: [RevenueSample] = [
         RevenueSample(month: "Jan", value: 34, tint: .teal),
@@ -46,5 +55,12 @@ enum ChartSamples {
         ChannelSample(name: "Search", value: 28, tint: .blue),
         ChannelSample(name: "Social", value: 18, tint: .pink),
         ChannelSample(name: "Email", value: 12, tint: .orange)
+    ]
+
+    static let spatial: [SpatialSample] = [
+        SpatialSample(segment: "Starter", acquisition: 18, revenue: 24, retention: 32, tint: .teal),
+        SpatialSample(segment: "Growth", acquisition: 36, revenue: 48, retention: 50, tint: .blue),
+        SpatialSample(segment: "Scale", acquisition: 58, revenue: 68, retention: 64, tint: .indigo),
+        SpatialSample(segment: "Enterprise", acquisition: 82, revenue: 88, retention: 78, tint: .pink)
     ]
 }

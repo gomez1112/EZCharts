@@ -20,7 +20,7 @@ xcodebuild \
   -project "$PROJECT" \
   -scheme "$SCHEME" \
   -configuration "$CONFIGURATION" \
-  -destination "platform=iOS Simulator,name=$SIMULATOR_NAME" \
+  -destination "generic/platform=iOS Simulator" \
   -derivedDataPath "$DERIVED_DATA_PATH" \
   build
 

@@ -58,3 +58,32 @@ import Testing
     #expect(domain.lowerBound == -12)
     #expect(domain.upperBound == 24)
 }
+
+@Test func sectorRangesNormalizePositiveValues() {
+    let ranges = EZChartProgress.sectorRanges(for: [20.0, 30.0, 50.0])
+
+    #expect(ranges.count == 3)
+    #expect(ranges[0].lowerBound == 0)
+    #expect(abs(ranges[0].upperBound - 0.2) < 0.0001)
+    #expect(abs(ranges[1].lowerBound - 0.2) < 0.0001)
+    #expect(abs(ranges[1].upperBound - 0.5) < 0.0001)
+    #expect(abs(ranges[2].lowerBound - 0.5) < 0.0001)
+    #expect(ranges[2].upperBound == 1)
+}
+
+@Test func sectorRangesIgnoreInvalidValuesWithoutChangingCount() {
+    let ranges = EZChartProgress.sectorRanges(for: [20.0, -10.0, .nan, 30.0])
+
+    #expect(ranges.count == 4)
+    #expect(ranges[1].lowerBound == ranges[1].upperBound)
+    #expect(ranges[2].lowerBound == ranges[2].upperBound)
+    #expect(ranges[3].upperBound == 1)
+}
+
+@Test func revealedRangeUsesClampedProgress() {
+    let range = 0.2..<0.7
+
+    #expect(EZChartProgress.revealedRange(range, progress: -1).upperBound == 0.2)
+    #expect(EZChartProgress.revealedRange(range, progress: 2).upperBound == 0.7)
+    #expect(abs(EZChartProgress.revealedRange(range, progress: 0.5).upperBound - 0.45) < 0.0001)
+}

@@ -6,11 +6,13 @@ struct SectorAnimationDemoView: View {
     @State private var replayToken = UUID()
 
     var body: some View {
+        let sectorRanges = EZChartProgress.sectorRanges(for: ChartSamples.channels.map(\.value))
+
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 ChartPanel(
                     title: "Sequenced Sectors",
-                    subtitle: "Each sector expands into its final share.",
+                    subtitle: "Each slice sweeps into place before the next starts.",
                     action: {
                         replayButton
                     }
@@ -26,16 +28,19 @@ struct SectorAnimationDemoView: View {
                                 progress: progress,
                                 overlap: 0.08
                             )
+                            let revealedRange = EZChartProgress.revealedRange(
+                                sectorRanges[index],
+                                progress: sectorProgress
+                            )
 
                             SectorMark(
-                                angle: .value("Share", sample.value),
+                                angle: .value("Share", revealedRange),
                                 innerRadius: .ratio(0.52),
-                                outerRadius: .ratio(0.52 + (0.48 * sectorProgress)),
+                                outerRadius: .ratio(1),
                                 angularInset: 2
                             )
                             .cornerRadius(5)
                             .foregroundStyle(sample.tint)
-                            .opacity(sectorProgress)
                         }
                     }
                     .chartLegend(.hidden)
@@ -44,8 +49,14 @@ struct SectorAnimationDemoView: View {
 
                 CodeSampleView(
                     lines: [
+                        "let ranges =",
+                        "  EZChartProgress.sectorRanges(",
+                        "    for: data.map(\\.value)",
+                        "  )",
                         "EZAnimatedChart { progress in",
-                        "  ForEach(data.enumerated(),",
+                        "  ForEach(Array(",
+                        "    data.enumerated()",
+                        "  ),",
                         "          id: \\.element.id) { index, point in",
                         "    let sectorProgress =",
                         "      EZChartProgress.sequenced(",
@@ -53,13 +64,18 @@ struct SectorAnimationDemoView: View {
                         "        count: data.count,",
                         "        progress: progress",
                         "      )",
-                        "    SectorMark(",
-                        "      angle: .value(\"Share\", point.value),",
-                        "      outerRadius: .ratio(",
-                        "        0.52 + 0.48 * sectorProgress",
+                        "    let finalRange = ranges[index]",
+                        "    let revealedRange =",
+                        "      EZChartProgress.revealedRange(",
+                        "        finalRange,",
+                        "        progress: sectorProgress",
                         "      )",
+                        "    SectorMark(",
+                        "      angle: .value(",
+                        "        \"Share\", revealedRange",
+                        "      ),",
+                        "      innerRadius: .ratio(0.52)",
                         "    )",
-                        "    .opacity(sectorProgress)",
                         "  }",
                         "}"
                     ]

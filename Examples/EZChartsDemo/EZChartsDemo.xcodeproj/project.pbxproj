@@ -15,6 +15,7 @@
 		1A0000000000000000000006 /* ChartSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000016 /* ChartSamples.swift */; };
 		1A0000000000000000000007 /* EZCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 1A00000000000000000000E2 /* EZCharts */; };
 		1A0000000000000000000008 /* SectorAnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000017 /* SectorAnimationDemoView.swift */; };
+		1A0000000000000000000009 /* Chart3DAnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000018 /* Chart3DAnimationDemoView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		1A0000000000000000000015 /* ChartPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartPanel.swift; sourceTree = "<group>"; };
 		1A0000000000000000000016 /* ChartSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSamples.swift; sourceTree = "<group>"; };
 		1A0000000000000000000017 /* SectorAnimationDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectorAnimationDemoView.swift; sourceTree = "<group>"; };
+		1A0000000000000000000018 /* Chart3DAnimationDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chart3DAnimationDemoView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +83,7 @@
 				1A0000000000000000000013 /* BarAnimationDemoView.swift */,
 				1A0000000000000000000014 /* LineRevealDemoView.swift */,
 				1A0000000000000000000017 /* SectorAnimationDemoView.swift */,
+				1A0000000000000000000018 /* Chart3DAnimationDemoView.swift */,
 				1A0000000000000000000015 /* ChartPanel.swift */,
 			);
 			path = Views;
@@ -165,6 +168,7 @@
 				1A0000000000000000000003 /* BarAnimationDemoView.swift in Sources */,
 				1A0000000000000000000004 /* LineRevealDemoView.swift in Sources */,
 				1A0000000000000000000008 /* SectorAnimationDemoView.swift in Sources */,
+				1A0000000000000000000009 /* Chart3DAnimationDemoView.swift in Sources */,
 				1A0000000000000000000005 /* ChartPanel.swift in Sources */,
 				1A0000000000000000000006 /* ChartSamples.swift in Sources */,
 			);

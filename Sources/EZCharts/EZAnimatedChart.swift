@@ -8,8 +8,6 @@ public struct EZAnimatedChart<Content: ChartContent>: View {
     private let replayToken: AnyHashable?
     private let content: (Double) -> Content
 
-    @State private var progress = 0.0
-
     public init(
         animation: EZChartAnimation = .smooth,
         reveal: EZChartReveal = .none,
@@ -23,27 +21,11 @@ public struct EZAnimatedChart<Content: ChartContent>: View {
     }
 
     public var body: some View {
-        Chart {
-            content(progress)
-        }
-        .modifier(EZChartRevealModifier(reveal: reveal, progress: progress))
-        .task(id: replayToken) {
-            await play()
-        }
-    }
-
-    @MainActor
-    private func play() async {
-        progress = 0
-
-        let delay = max(animation.delay, 0)
-        if delay > 0 {
-            let nanoseconds = UInt64(delay * 1_000_000_000)
-            try? await Task.sleep(nanoseconds: nanoseconds)
-        }
-
-        withAnimation(animation.swiftUIAnimation) {
-            progress = 1
+        EZChartAnimator(animation: animation, replayToken: replayToken) { progress in
+            Chart {
+                content(progress)
+            }
+            .modifier(EZChartRevealModifier(reveal: reveal, progress: progress))
         }
     }
 }
