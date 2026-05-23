@@ -16,6 +16,7 @@
 		1A0000000000000000000007 /* EZCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 1A00000000000000000000E2 /* EZCharts */; };
 		1A0000000000000000000008 /* SectorAnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000017 /* SectorAnimationDemoView.swift */; };
 		1A0000000000000000000009 /* Chart3DAnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000018 /* Chart3DAnimationDemoView.swift */; };
+		1A000000000000000000000A /* EZCharts3D in Frameworks */ = {isa = PBXBuildFile; productRef = 1A00000000000000000000E3 /* EZCharts3D */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A0000000000000000000007 /* EZCharts in Frameworks */,
+				1A000000000000000000000A /* EZCharts3D in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,6 +109,7 @@
 			name = EZChartsDemo;
 			packageProductDependencies = (
 				1A00000000000000000000E2 /* EZCharts */,
+				1A00000000000000000000E3 /* EZCharts3D */,
 			);
 			productName = EZChartsDemo;
 			productReference = 1A0000000000000000000010 /* EZChartsDemo.app */;
@@ -391,6 +394,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1A00000000000000000000E1 /* XCLocalSwiftPackageReference "../.." */;
 			productName = EZCharts;
+		};
+		1A00000000000000000000E3 /* EZCharts3D */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A00000000000000000000E1 /* XCLocalSwiftPackageReference "../.." */;
+			productName = EZCharts3D;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

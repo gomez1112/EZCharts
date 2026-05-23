@@ -46,7 +46,7 @@ public struct EZChartAnimation: Equatable {
         }
     }
 
-    func progress(at rawProgress: Double) -> Double {
+    public func progress(at rawProgress: Double) -> Double {
         let progress = EZChartProgress.clamped(rawProgress)
 
         switch curve {

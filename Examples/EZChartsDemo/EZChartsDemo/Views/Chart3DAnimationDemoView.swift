@@ -1,5 +1,6 @@
 import Charts
 import EZCharts
+import EZCharts3D
 import SwiftUI
 
 @available(iOS 26.0, *)

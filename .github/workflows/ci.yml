@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  swiftpm:
+    name: SwiftPM
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swift --version
+
+      - name: Build EZCharts
+        run: swift build --target EZCharts
+
+      - name: Build EZCharts3D
+        run: swift build --target EZCharts3D
+
+      - name: Test
+        run: swift test
+
+  demo:
+    name: Demo App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build demo app
+        run: |
+          xcodebuild \
+            -project Examples/EZChartsDemo/EZChartsDemo.xcodeproj \
+            -scheme EZChartsDemo \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            build

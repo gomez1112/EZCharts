@@ -4,7 +4,7 @@
 
 - `EZAnimatedChart`, a wrapper around `Chart` that drives an animation progress value from `0` to `1`.
 - `EZAnimatedSectorChart`, a high-level donut and pie chart wrapper with true slice-by-slice sweep animation.
-- `EZAnimatedChart3D`, a separate wrapper for `Chart3D` on iOS 26 and macOS 26.
+- `EZCharts3D`, a separate product with `EZAnimatedChart3D` for `Chart3D` on iOS 26 and macOS 26.
 - `EZChartProgress.scaled`, for marks that should grow from zero to their final value.
 - `EZChartProgress.staggered`, for overlapping cascade animations.
 - `EZChartProgress.sequenced`, for one-by-one mark animations.
@@ -22,6 +22,8 @@ The package is intentionally light. You still write normal Swift Charts marks, s
 - SwiftUI
 - Swift Charts
 
+`EZCharts3D` requires an Xcode toolchain with the iOS 26/macOS 26 Swift Charts SDK. The base `EZCharts` product is separate so apps that only need 2D charts do not need to compile `Chart3D` symbols.
+
 ## Installation
 
 In Xcode:
@@ -34,8 +36,9 @@ In Xcode:
 https://github.com/gomez1112/EZCharts.git
 ```
 
-4. To use the latest API shown in this README, select `Branch` and enter `main`.
+4. To use the latest unreleased API shown in this README, select `Branch` and enter `main`.
 5. Add the `EZCharts` product to your app target.
+6. If you use `Chart3D`, also add the `EZCharts3D` product to your app target.
 
 In `Package.swift`:
 
@@ -43,7 +46,7 @@ In `Package.swift`:
 .package(url: "https://github.com/gomez1112/EZCharts.git", branch: "main")
 ```
 
-Then add `EZCharts` to the target that uses it:
+Then add `EZCharts` to the target that uses normal 2D charts:
 
 ```swift
 .target(
@@ -52,19 +55,40 @@ Then add `EZCharts` to the target that uses it:
 )
 ```
 
-The existing `0.1.0` tag contains the first package release. The `.ezChartYScale(for:)`, `.sequenced(...)`, `EZAnimatedSectorChart`, and `EZAnimatedChart3D` APIs shown below were added after `0.1.0`, so tag a new release, such as `0.1.1`, before switching consumers back to version-based installation:
+If the same target uses `Chart3D`, add both products:
 
 ```swift
-.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.1.1")
+.target(
+    name: "YourApp",
+    dependencies: [
+        "EZCharts",
+        "EZCharts3D"
+    ]
+)
+```
+
+For the current release, prefer version-based installation:
+
+```swift
+.package(url: "https://github.com/gomez1112/EZCharts.git", from: "0.2.3")
 ```
 
 ## Importing
 
-Use both `Charts` and `EZCharts` in the SwiftUI view that draws charts:
+Use both `Charts` and `EZCharts` in the SwiftUI view that draws 2D charts:
 
 ```swift
 import Charts
 import EZCharts
+import SwiftUI
+```
+
+For `Chart3D`, import the separate 3D product too:
+
+```swift
+import Charts
+import EZCharts
+import EZCharts3D
 import SwiftUI
 ```
 
@@ -273,6 +297,7 @@ struct ChannelChart: View {
     var body: some View {
         EZAnimatedSectorChart(
             channels,
+            id: \.id,
             value: \.value,
             animation: EZChartAnimation(duration: 1.7, curve: .easeOut)
         ) { point in
@@ -283,13 +308,16 @@ struct ChannelChart: View {
 }
 ```
 
-That is the whole public API for the normal sector animation. Pass your data, tell EZCharts which numeric property represents the slice value, and optionally return a color.
+That is the whole public API for the normal sector animation. Pass your data, tell EZCharts which property is the stable identity, tell it which numeric property represents the slice value, and optionally return a style.
+
+`id:` is recommended when the data can be inserted, removed, or reordered. If you omit it, EZCharts uses the item offset, which is fine for static samples but weaker for dynamic data.
 
 If you want a pie chart instead of the default donut style, pass `.pie`:
 
 ```swift
 EZAnimatedSectorChart(
     channels,
+    id: \.id,
     value: \.value,
     style: .pie
 ) { point in
@@ -310,6 +338,7 @@ let style = EZSectorChartStyle(
 
 EZAnimatedSectorChart(
     channels,
+    id: \.id,
     value: \.value,
     style: style
 ) { point in
@@ -317,9 +346,25 @@ EZAnimatedSectorChart(
 }
 ```
 
+The style closure accepts any SwiftUI `ShapeStyle`, not only `Color`. For example:
+
+```swift
+EZAnimatedSectorChart(
+    channels,
+    id: \.id,
+    value: \.value
+) { point in
+    LinearGradient(
+        colors: [point.color.opacity(0.65), point.color],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+}
+```
+
 ## Chart3D Animation
 
-`Chart3D` is available in Swift Charts on iOS 26, macOS 26, and visionOS 26. It has a separate EZCharts API: use `EZAnimatedChart3D`, not `EZAnimatedChart`.
+`Chart3D` is available in Swift Charts on iOS 26, macOS 26, and visionOS 26. It has a separate product and API: add `EZCharts3D`, import `EZCharts3D`, then use `EZAnimatedChart3D`.
 
 `EZAnimatedChart3D` drives progress frame by frame because 3D marks should not rely on the same implicit interpolation behavior as 2D charts.
 
@@ -482,6 +527,12 @@ struct ReplayableChart: View {
 
 Any `Hashable` value can be used as the token. A new `UUID()` is the simplest option.
 
+## Reduce Motion
+
+EZCharts respects the system Reduce Motion setting. When Reduce Motion is enabled, `EZAnimatedChart`, `EZAnimatedSectorChart`, and `EZAnimatedChart3D` skip directly to their final progress value instead of running the frame-by-frame animation.
+
+You do not need to add extra code for this behavior. Keep using the same chart wrappers and progress helpers.
+
 ## Animation Presets
 
 `EZChartAnimation` includes a few presets:
@@ -542,16 +593,17 @@ Use this wherever you would normally use `Chart`. The closure must return Swift 
 ```swift
 EZAnimatedSectorChart(
     data,
+    id: \.id,
     value: \.value,
     animation: EZChartAnimation = .init(duration: 1.7, curve: .easeOut),
-    replayToken: AnyHashable? = nil
+    replayToken: AnyHashable? = nil,
     style: EZSectorChartStyle = .donut
 ) { point in
     point.color
 }
 ```
 
-Use this for pie and donut charts. It hides the `SectorMark` angle-range work needed for true slice sweep animation.
+Use this for pie and donut charts. It hides the `SectorMark` angle-range work needed for true slice sweep animation. The style closure can return any `ShapeStyle`, including `Color` and `LinearGradient`.
 
 ### `EZAnimatedChart3D`
 
@@ -564,7 +616,7 @@ EZAnimatedChart3D(
 }
 ```
 
-Use this for `Chart3D` on iOS 26 and macOS 26. The closure must return 3D chart content such as `PointMark(x:y:z:)`, `RectangleMark(x:y:z:)`, or `RuleMark` variants that conform to `Chart3DContent`.
+Use this from the `EZCharts3D` product for `Chart3D` on iOS 26 and macOS 26. The closure must return 3D chart content such as `PointMark(x:y:z:)`, `RectangleMark(x:y:z:)`, or `RuleMark` variants that conform to `Chart3DContent`.
 
 ### `EZChartProgress.scaled`
 
