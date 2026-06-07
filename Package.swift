@@ -6,7 +6,8 @@ let package = Package(
     name: "EZCharts",
     platforms: [
         .iOS(.v16),
-        .macOS(.v13)
+        .macOS(.v13),
+        .watchOS(.v10)
     ],
     products: [
         .library(

@@ -1,7 +1,7 @@
 import Charts
 import SwiftUI
 
-@available(iOS 17.0, macOS 14.0, *)
+@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct EZSectorChartStyle {
     public var innerRadius: MarkDimension
     public var outerRadius: MarkDimension
@@ -42,7 +42,7 @@ public struct EZSectorChartStyle {
     )
 }
 
-@available(iOS 17.0, macOS 14.0, *)
+@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct EZAnimatedSectorChart<Data: RandomAccessCollection>: View {
     private let sectors: [EZIndexedSector<Data.Element>]
     private let value: (Data.Element) -> Double
