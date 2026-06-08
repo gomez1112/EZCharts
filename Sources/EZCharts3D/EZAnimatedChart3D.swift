@@ -1,4 +1,4 @@
-#if compiler(>=6.2)
+#if compiler(>=6.2) && (os(iOS) || os(macOS) || os(visionOS))
 import Charts
 import EZCharts
 import SwiftUI
