@@ -1,13 +1,15 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
     name: "EZCharts",
+    defaultLocalization: "en",
     platforms: [
-        .iOS(.v16),
-        .macOS(.v13),
-        .watchOS(.v10)
+        .iOS(.v17),
+        .macOS(.v14),
+        .watchOS(.v10),
+        .visionOS(.v1)
     ],
     products: [
         .library(
@@ -21,15 +23,19 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "EZCharts"
+            name: "EZCharts",
+            resources: [.process("Resources")],
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .target(
             name: "EZCharts3D",
-            dependencies: ["EZCharts"]
+            dependencies: ["EZCharts"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
             name: "EZChartsTests",
-            dependencies: ["EZCharts"]
+            dependencies: ["EZCharts"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
         )
     ]
 )

@@ -37,6 +37,8 @@ struct BarAnimationDemoView: View {
                             )
                             .foregroundStyle(sample.tint)
                             .cornerRadius(7)
+                            .accessibilityLabel(sample.month)
+                            .accessibilityValue(Text(sample.value, format: .number))
                         }
                     }
                     .chartYAxisLabel("Revenue")
