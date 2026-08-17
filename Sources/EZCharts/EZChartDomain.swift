@@ -6,57 +6,21 @@ public enum EZChartDomain {
         _ values: Values,
         headroom: Double = 0.1,
         fallback: ClosedRange<Double> = 0...1
-    ) -> ClosedRange<Double> where Values.Element: BinaryFloatingPoint {
-        makeZeroBasedDomain(
-            values.map(Double.init),
-            headroom: headroom,
-            fallback: fallback
-        )
-    }
-
-    public static func zeroBased<Values: Sequence>(
-        _ values: Values,
-        headroom: Double = 0.1,
-        fallback: ClosedRange<Double> = 0...1
-    ) -> ClosedRange<Double> where Values.Element: BinaryInteger {
-        makeZeroBasedDomain(
-            values.map(Double.init),
-            headroom: headroom,
-            fallback: fallback
-        )
-    }
-
-    private static func makeZeroBasedDomain<Values: Sequence>(
-        _ values: Values,
-        headroom: Double,
-        fallback: ClosedRange<Double>
-    ) -> ClosedRange<Double> where Values.Element == Double {
-        let finiteValues = values.filter(\.isFinite)
-
+    ) -> ClosedRange<Double> where Values.Element: EZChartValue {
+        let finiteValues = values.map(\.ezChartValue).filter(\.isFinite)
         guard let minimum = finiteValues.min(), let maximum = finiteValues.max() else {
             return normalized(fallback)
         }
-
-        guard minimum != 0 || maximum != 0 else {
-            return normalized(fallback)
-        }
+        guard minimum != 0 || maximum != 0 else { return normalized(fallback) }
 
         let boundedHeadroom = max(headroom, 0)
-        var lowerBound = min(0, minimum)
-        var upperBound = max(0, maximum)
-
-        if lowerBound < 0 {
-            lowerBound += lowerBound * boundedHeadroom
-        }
-
-        if upperBound > 0 {
-            upperBound += upperBound * boundedHeadroom
-        }
-
-        guard lowerBound < upperBound else {
+        let lowerBase = min(0, minimum)
+        let upperBase = max(0, maximum)
+        let lowerBound = lowerBase < 0 ? lowerBase * (1 + boundedHeadroom) : lowerBase
+        let upperBound = upperBase > 0 ? upperBase * (1 + boundedHeadroom) : upperBase
+        guard lowerBound.isFinite, upperBound.isFinite, lowerBound < upperBound else {
             return normalized(fallback)
         }
-
         return lowerBound...upperBound
     }
 
@@ -64,26 +28,16 @@ public enum EZChartDomain {
         guard range.lowerBound.isFinite, range.upperBound.isFinite, range.lowerBound < range.upperBound else {
             return 0...1
         }
-
         return range
     }
 }
 
-@available(iOS 16.0, macOS 13.0, *)
 public extension View {
     func ezChartYScale<Values: Sequence>(
         for values: Values,
         headroom: Double = 0.1,
         fallback: ClosedRange<Double> = 0...1
-    ) -> some View where Values.Element: BinaryFloatingPoint {
-        chartYScale(domain: EZChartDomain.zeroBased(values, headroom: headroom, fallback: fallback))
-    }
-
-    func ezChartYScale<Values: Sequence>(
-        for values: Values,
-        headroom: Double = 0.1,
-        fallback: ClosedRange<Double> = 0...1
-    ) -> some View where Values.Element: BinaryInteger {
+    ) -> some View where Values.Element: EZChartValue {
         chartYScale(domain: EZChartDomain.zeroBased(values, headroom: headroom, fallback: fallback))
     }
 }

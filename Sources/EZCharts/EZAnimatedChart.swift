@@ -1,7 +1,6 @@
 import Charts
 import SwiftUI
 
-@available(iOS 16.0, macOS 13.0, *)
 public struct EZAnimatedChart<Content: ChartContent>: View {
     private let animation: EZChartAnimation
     private let reveal: EZChartReveal
@@ -21,7 +20,7 @@ public struct EZAnimatedChart<Content: ChartContent>: View {
     }
 
     public var body: some View {
-        EZChartProgressDriver(animation: animation, replayToken: replayToken) { progress in
+        EZChartProgressPlayback(animation: animation, replayToken: replayToken) { progress in
             Chart {
                 content(progress)
             }
@@ -30,24 +29,51 @@ public struct EZAnimatedChart<Content: ChartContent>: View {
     }
 }
 
-@available(iOS 16.0, macOS 13.0, *)
 private struct EZChartRevealModifier: ViewModifier {
     let reveal: EZChartReveal
     let progress: Double
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        switch reveal {
-        case .none:
+        if reveal == .none {
             content
-        case .horizontal:
+        } else {
+            #if os(watchOS)
+            content.mask {
+                EZChartRevealMask(reveal: reveal, progress: progress)
+            }
+            #else
             content.chartPlotStyle { plotArea in
-                plotArea.mask(alignment: .leading) {
-                    GeometryReader { proxy in
-                        Rectangle()
-                            .frame(width: proxy.size.width * EZChartProgress.clamped(progress))
-                    }
+                plotArea.mask {
+                    EZChartRevealMask(reveal: reveal, progress: progress)
                 }
+            }
+            #endif
+        }
+    }
+}
+
+private struct EZChartRevealMask: View {
+    let reveal: EZChartReveal
+    let progress: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            switch reveal.kind {
+            case .none:
+                Rectangle()
+            case .horizontal:
+                Rectangle()
+                    .frame(width: proxy.size.width * EZChartProgress.clamped(progress))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            case .vertical:
+                Rectangle()
+                    .frame(height: proxy.size.height * EZChartProgress.clamped(progress))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            case .radial:
+                Circle()
+                    .scaleEffect(EZChartProgress.clamped(progress))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }

@@ -1,4 +1,4 @@
-#if compiler(>=6.2) && (os(iOS) || os(macOS) || os(visionOS))
+#if os(iOS) || os(macOS) || os(visionOS)
 import Charts
 import EZCharts
 import SwiftUI
@@ -20,7 +20,7 @@ public struct EZAnimatedChart3D<Content: Chart3DContent>: View {
     }
 
     public var body: some View {
-        EZChart3DProgressDriver(animation: animation, replayToken: replayToken) { progress in
+        EZChartProgressPlayback(animation: animation, replayToken: replayToken) { progress in
             Chart3D {
                 content(progress)
             }
@@ -29,112 +29,34 @@ public struct EZAnimatedChart3D<Content: Chart3DContent>: View {
 }
 
 @available(iOS 26.0, macOS 26.0, *)
+/// A 3D-specific facade that forwards progress calculations to ``EZCharts/EZChartProgress``.
 public enum EZChart3DProgress {
+    /// Forwards to ``EZCharts/EZChartProgress/scaled(_:progress:)``.
     public static func scaled(_ value: Double, progress: Double) -> Double {
         EZChartProgress.scaled(value, progress: progress)
     }
 
+    /// Forwards to ``EZCharts/EZChartProgress/sequenced(index:count:progress:overlap:)``.
     public static func sequenced(
         index: Int,
         count: Int,
         progress: Double,
-        overlap: Double = 0
+        overlap: Double = 0,
+        easing: EZChartProgress.Easing = .smoothstep
     ) -> Double {
-        EZChartProgress.sequenced(
-            index: index,
-            count: count,
-            progress: progress,
-            overlap: overlap
-        )
+        EZChartProgress.sequenced(index: index, count: count, progress: progress, overlap: overlap, easing: easing)
     }
 
+    /// Forwards to ``EZCharts/EZChartProgress/staggered(index:count:progress:itemDuration:)``.
     public static func staggered(
         index: Int,
         count: Int,
         progress: Double,
-        itemDuration: Double = 0.5
+        itemDuration: Double = 0.5,
+        easing: EZChartProgress.Easing = .smoothstep
     ) -> Double {
-        EZChartProgress.staggered(
-            index: index,
-            count: count,
-            progress: progress,
-            itemDuration: itemDuration
-        )
+        EZChartProgress.staggered(index: index, count: count, progress: progress, itemDuration: itemDuration, easing: easing)
     }
 }
 
-@available(iOS 26.0, macOS 26.0, *)
-private struct EZChart3DProgressDriver<Content: View>: View {
-    private let animation: EZChartAnimation
-    private let replayToken: AnyHashable?
-    private let content: (Double) -> Content
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var progress = 0.0
-
-    init(
-        animation: EZChartAnimation,
-        replayToken: AnyHashable?,
-        @ViewBuilder content: @escaping (Double) -> Content
-    ) {
-        self.animation = animation
-        self.replayToken = replayToken
-        self.content = content
-    }
-
-    var body: some View {
-        content(progress)
-            .task(id: EZChart3DPlaybackKey(replayToken: replayToken, reduceMotion: reduceMotion)) {
-                await play(reduceMotion: reduceMotion)
-            }
-    }
-
-    @MainActor
-    private func play(reduceMotion: Bool) async {
-        guard !reduceMotion else {
-            progress = 1
-            return
-        }
-
-        progress = 0
-
-        let clock = ContinuousClock()
-        let delay = max(animation.delay, 0)
-        if delay > 0 {
-            try? await clock.sleep(for: .seconds(delay))
-        }
-
-        let duration = max(animation.duration, 0.001)
-        let start = clock.now
-
-        while !Task.isCancelled {
-            let elapsed = start.duration(to: clock.now).timeInterval
-            let rawProgress = elapsed / duration
-            progress = animation.progress(at: rawProgress)
-
-            if rawProgress >= 1 {
-                progress = 1
-                return
-            }
-
-            try? await clock.sleep(for: .milliseconds(16), tolerance: .milliseconds(2))
-        }
-    }
-}
-
-private struct EZChart3DPlaybackKey: Equatable {
-    let replayToken: AnyHashable?
-    let reduceMotion: Bool
-}
-
-private extension Duration {
-    static func seconds(_ value: Double) -> Duration {
-        .nanoseconds(Int64((value * 1_000_000_000).rounded()))
-    }
-
-    var timeInterval: TimeInterval {
-        let durationComponents = self.components
-        return TimeInterval(durationComponents.seconds) + TimeInterval(durationComponents.attoseconds) / 1_000_000_000_000_000_000
-    }
-}
 #endif

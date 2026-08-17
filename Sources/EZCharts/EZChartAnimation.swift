@@ -1,23 +1,40 @@
 import SwiftUI
 
-@available(iOS 16.0, macOS 13.0, *)
-public struct EZChartAnimation: Equatable {
-    public enum Curve: Equatable {
-        case easeInOut
-        case easeOut
-        case linear
-        case spring(response: Double, dampingFraction: Double)
+/// Timing configuration used by animated charts.
+public struct EZChartAnimation: Equatable, Sendable {
+    /// A SwiftUI animation curve selection that can gain new static members without breaking exhaustive switches.
+    public struct Curve: Equatable, Sendable {
+        package enum Kind: Equatable, Sendable {
+            case easeInOut
+            case easeOut
+            case linear
+            case spring(duration: Double, bounce: Double)
+        }
+
+        package let kind: Kind
+
+        private init(_ kind: Kind) { self.kind = kind }
+
+        public static let easeInOut = Curve(.easeInOut)
+        public static let easeOut = Curve(.easeOut)
+        public static let linear = Curve(.linear)
+
+        /// Creates a perceptual-duration spring with the specified bounce.
+        public static func spring(duration: Double, bounce: Double) -> Curve {
+            Curve(.spring(duration: duration, bounce: bounce))
+        }
+
+        @available(*, deprecated, renamed: "spring(duration:bounce:)")
+        public static func spring(response: Double, dampingFraction: Double) -> Curve {
+            .spring(duration: response, bounce: 1 - dampingFraction)
+        }
     }
 
     public var duration: TimeInterval
     public var delay: TimeInterval
     public var curve: Curve
 
-    public init(
-        duration: TimeInterval = 0.8,
-        delay: TimeInterval = 0,
-        curve: Curve = .easeOut
-    ) {
+    public init(duration: TimeInterval = 0.8, delay: TimeInterval = 0, curve: Curve = .easeOut) {
         self.duration = duration
         self.delay = delay
         self.curve = curve
@@ -25,55 +42,31 @@ public struct EZChartAnimation: Equatable {
 
     public static let smooth = EZChartAnimation(duration: 0.9, curve: .easeInOut)
     public static let quick = EZChartAnimation(duration: 0.45, curve: .easeOut)
-    public static let snappy = EZChartAnimation(
-        duration: 0.7,
-        curve: .spring(response: 0.55, dampingFraction: 0.85)
-    )
+    public static let snappy = EZChartAnimation(duration: 0.7, curve: .spring(duration: 0.55, bounce: 0.15))
 
-    var swiftUIAnimation: Animation {
-        switch curve {
-        case .easeInOut:
-            return .easeInOut(duration: duration)
-        case .easeOut:
-            return .easeOut(duration: duration)
-        case .linear:
-            return .linear(duration: duration)
-        case let .spring(response, dampingFraction):
-            return .spring(
-                response: response,
-                dampingFraction: dampingFraction
-            )
+    package var swiftUIAnimation: Animation {
+        let baseAnimation = switch curve.kind {
+        case .easeInOut: Animation.easeInOut(duration: max(duration, 0))
+        case .easeOut: Animation.easeOut(duration: max(duration, 0))
+        case .linear: Animation.linear(duration: max(duration, 0))
+        case let .spring(springDuration, bounce):
+            Animation.spring(duration: max(springDuration, 0), bounce: bounce)
         }
+        return baseAnimation.delay(max(delay, 0))
     }
 
-    public func progress(at rawProgress: Double) -> Double {
-        let progress = EZChartProgress.clamped(rawProgress)
-
-        switch curve {
-        case .linear:
-            return progress
-        case .easeInOut:
-            return smoothstep(progress)
-        case .easeOut:
-            return cubicEaseOut(progress)
-        case .spring:
-            return cubicEaseOut(progress)
-        }
-    }
-
-    private func smoothstep(_ progress: Double) -> Double {
-        progress * progress * (3 - 2 * progress)
-    }
-
-    private func cubicEaseOut(_ progress: Double) -> Double {
-        let remaining = 1 - progress
-
-        return 1 - (remaining * remaining * remaining)
-    }
+    @available(*, deprecated, message: "SwiftUI interpolation is now the source of truth; use EZChartProgress.clamped(_:) for progress math.")
+    public func progress(at rawProgress: Double) -> Double { EZChartProgress.clamped(rawProgress) }
 }
 
-@available(iOS 16.0, macOS 13.0, *)
-public enum EZChartReveal: Equatable {
-    case none
-    case horizontal
+/// A rendering-only reveal effect for an animated chart.
+public struct EZChartReveal: Equatable, Sendable {
+    package enum Kind: Equatable, Sendable { case none, horizontal, vertical, radial }
+    package let kind: Kind
+    private init(_ kind: Kind) { self.kind = kind }
+
+    public static let none = EZChartReveal(.none)
+    public static let horizontal = EZChartReveal(.horizontal)
+    public static let vertical = EZChartReveal(.vertical)
+    public static let radial = EZChartReveal(.radial)
 }

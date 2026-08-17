@@ -18,6 +18,7 @@ struct SectorAnimationDemoView: View {
                     EZAnimatedSectorChart(
                         ChartSamples.channels,
                         value: \.value,
+                        label: \.name,
                         animation: EZChartAnimation(duration: 1.7, curve: .easeOut),
                         replayToken: replayToken
                     ) { sample in

@@ -14,6 +14,8 @@
 
 The package is intentionally light. You still write normal Swift Charts marks, scales, styles, and axes. `EZCharts` only provides the reusable animation timing.
 
+> On watchOS, reveal masks apply to the entire chart because `chartPlotStyle(content:)` is unavailable. Unlike the plot-only mask used on other platforms, this fallback also clips axes and legends while the reveal runs. Prefer minimal or hidden axes on compact watch charts. `EZCharts3D` builds as an empty module on watchOS; `EZAnimatedChart3D` is intentionally unavailable there.
+
 ## Requirements
 
 - Swift 5.9+
@@ -129,6 +131,8 @@ struct SalesChart: View {
 ```
 
 `EZChartProgress.scaled(point.value, progress: progress)` is the key line. When `progress` is `0`, the bar is `0`. When `progress` is `1`, the bar is the real value.
+
+Because the plotted value changes during animation, attach the final data value to each animated mark for VoiceOver, for example `.accessibilityValue(Text(point.value, format: .number))`. Accessibility should describe the stable result rather than the current interpolated frame. `EZAnimatedSectorChart` does this automatically when you provide `label:`.
 
 `.ezChartYScale(for: sales.map(\.value))` is also important. Swift Charts normally auto-scales the Y axis from the data currently inside the chart. During an animation, your data changes every frame because the values move from `0` to their final value. A stable Y scale keeps the baseline pinned at zero, so bars grow upward instead of looking like they are moving from the top down.
 
